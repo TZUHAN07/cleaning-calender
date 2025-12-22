@@ -3,8 +3,22 @@ const currentMonthEl = document.getElementById("currentMonth");
 const modal = document.getElementById("jobModal");
 const closeModalBtn = document.getElementById("closeModal");
 const saveJobBtn = document.getElementById("saveJob");
+const hoursInput = document.getElementById("hours");
+const hourlyRateInput = document.getElementById("hourlyRate");
+const totalPriceEl = document.getElementById("totalPrice");
 
+const jobsByDate = {};
+let selectedDate = "";
 let currentDate = new Date();
+
+function updateTotalPrice() {
+  const hours = Number(hoursInput.value) || 0;
+  const rate = Number(hourlyRateInput.value) || 0;
+  totalPriceEl.textContent = hours * rate;
+}
+
+hoursInput.addEventListener("input", updateTotalPrice);
+hourlyRateInput.addEventListener("input", updateTotalPrice);
 
 function renderCalendar(date) {
   calendar.innerHTML = "";
@@ -26,9 +40,14 @@ function renderCalendar(date) {
     const dayEl = document.createElement("div");
     dayEl.className = "day";
 
+    const dateKey = `${year}-${month + 1}-${day}`;
+    dayEl.dataset.date = dateKey;
+    dayEl.dataset.day = day;
+
     dayEl.innerHTML = `<div class="day-number">${day}</div>`;
 
     dayEl.addEventListener("click", () => {
+      selectedDate = `${year}-${month + 1}-${day}`;
       modal.classList.remove("hidden");
     });
 
@@ -43,6 +62,33 @@ closeModalBtn.addEventListener("click", () => {
 });
 
 saveJobBtn.addEventListener("click", () => {
-  console.log("儲存案件（之後接後端）");
+  const job = {
+    client: clientName.value,
+    hours: hoursInput.value,
+    rate: hourlyRateInput.value,
+    total: Number(hoursInput.value) * Number(hourlyRateInput.value),
+  };
+
+  if (!jobsByDate[selectedDate]) {
+    jobsByDate[selectedDate] = [];
+  }
+
+  jobsByDate[selectedDate].push(job);
+
+  renderJobs();
   modal.classList.add("hidden");
 });
+
+function renderJobs() {
+  document.querySelectorAll(".day").forEach((dayEl) => {
+    const date = dayEl.dataset.date;
+    const jobs = jobsByDate[date] || [];
+
+    let html = `<div class="day-number">${dayEl.dataset.day}</div>`;
+    jobs.forEach((job) => {
+      html += `<div class="job-item">${job.client} $${job.total}</div>`;
+    });
+
+    dayEl.innerHTML = html;
+  });
+}
