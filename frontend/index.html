@@ -1,22 +1,48 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <title>接案月曆管理</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>接案月曆管理</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>接案月曆</h1>
 
-  <h1>接案月曆</h1>
+    <div class="calendar-header">
+      <button id="prevMonth">◀</button>
+      <span id="currentMonth"></span>
+      <button id="nextMonth">▶</button>
+    </div>
 
-  <div class="calendar-header">
-    <button id="prevMonth">◀</button>
-    <span id="currentMonth"></span>
-    <button id="nextMonth">▶</button>
-  </div>
+    <div class="calendar" id="calendar"></div>
 
-  <div class="calendar" id="calendar"></div>
+    <!-- 新增案件視窗 -->
+    <div id="jobModal" class="modal hidden">
+      <div class="modal-content">
+        <h2>新增案件</h2>
 
-  <script src="script.js"></script>
-</body>
+        <label>
+          客戶名稱
+          <input type="text" id="clientName" />
+        </label>
+
+        <label>
+          工作時數
+          <input type="number" id="hours" />
+        </label>
+
+        <label>
+          時薪
+          <input type="number" id="hourlyRate" />
+        </label>
+
+        <div class="modal-actions">
+          <button id="saveJob">儲存</button>
+          <button id="closeModal">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
 </html>

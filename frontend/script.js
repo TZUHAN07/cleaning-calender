@@ -1,5 +1,8 @@
 const calendar = document.getElementById("calendar");
 const currentMonthEl = document.getElementById("currentMonth");
+const modal = document.getElementById("jobModal");
+const closeModalBtn = document.getElementById("closeModal");
+const saveJobBtn = document.getElementById("saveJob");
 
 let currentDate = new Date();
 
@@ -26,7 +29,7 @@ function renderCalendar(date) {
     dayEl.innerHTML = `<div class="day-number">${day}</div>`;
 
     dayEl.addEventListener("click", () => {
-      alert(`${year}-${month + 1}-${day} 新增案件`);
+      modal.classList.remove("hidden");
     });
 
     calendar.appendChild(dayEl);
@@ -34,3 +37,12 @@ function renderCalendar(date) {
 }
 
 renderCalendar(currentDate);
+
+closeModalBtn.addEventListener("click", () => {
+  modal.classList.add("hidden");
+});
+
+saveJobBtn.addEventListener("click", () => {
+  console.log("儲存案件（之後接後端）");
+  modal.classList.add("hidden");
+});
