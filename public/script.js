@@ -3,6 +3,7 @@ const currentMonthEl = document.getElementById("currentMonth");
 const modal = document.getElementById("jobModal");
 const closeModalBtn = document.getElementById("closeModal");
 const saveJobBtn = document.getElementById("saveJob");
+const clientName = document.getElementById("clientName");
 const hoursInput = document.getElementById("hours");
 const hourlyRateInput = document.getElementById("hourlyRate");
 const totalPriceEl = document.getElementById("totalPrice");
@@ -61,22 +62,53 @@ closeModalBtn.addEventListener("click", () => {
   modal.classList.add("hidden");
 });
 
-saveJobBtn.addEventListener("click", () => {
-  const job = {
-    client: clientName.value,
-    hours: hoursInput.value,
-    rate: hourlyRateInput.value,
-    total: Number(hoursInput.value) * Number(hourlyRateInput.value),
+saveJobBtn.addEventListener("click", async () => {
+  // 檢查資料抓取是否正常
+  const payload = {
+    date: selectedDate,
+    client_name: clientName.value,
+    hours: Number(hoursInput.value),
+    hourly_rate: Number(hourlyRateInput.value),
   };
 
-  if (!jobsByDate[selectedDate]) {
-    jobsByDate[selectedDate] = [];
+  if (!payload.date || !payload.client_name || !payload.hours || !payload.hourly_rate) {
+    alert("請填寫完整資訊");
+    return;
   }
 
-  jobsByDate[selectedDate].push(job);
+  try {
+    const res = await fetch("/api/jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  renderJobs();
-  modal.classList.add("hidden");
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error("後端回傳錯誤:", errorData);
+      throw new Error("儲存失敗");
+    }
+
+    const savedJob = await res.json(); // 後端回傳含 total 的資料
+
+    if (!jobsByDate[selectedDate]) {
+      jobsByDate[selectedDate] = [];
+    }
+
+    jobsByDate[selectedDate].push({
+      client: savedJob.client_name,
+      total: savedJob.total,
+    });
+
+    renderJobs();
+    modal.classList.add("hidden");
+    alert("同步成功！");
+  } catch (err) {
+    alert("存檔失敗，請確認後端是否啟動");
+    console.error(err);
+  }
 });
 
 function renderJobs() {
