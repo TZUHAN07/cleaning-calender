@@ -57,6 +57,7 @@ function renderCalendar(date) {
 }
 
 renderCalendar(currentDate);
+loadJobsFromServer();
 
 closeModalBtn.addEventListener("click", () => {
   modal.classList.add("hidden");
@@ -123,4 +124,30 @@ function renderJobs() {
 
     dayEl.innerHTML = html;
   });
+}
+
+async function loadJobsFromServer() {
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+  const monthKey = `${year}-${month}`;
+
+  try {
+    const res = await fetch(`/api/jobs?month=${monthKey}`);
+    const jobs = await res.json();
+
+    jobs.forEach(job => {
+      if (!jobsByDate[job.date]) {
+        jobsByDate[job.date] = [];
+      }
+
+      jobsByDate[job.date].push({
+        client: job.client_name,
+        total: job.total,
+      });
+    });
+
+    renderJobs();
+  } catch (err) {
+    console.error("讀取案件失敗", err);
+  }
 }

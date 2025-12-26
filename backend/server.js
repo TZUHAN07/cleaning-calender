@@ -77,6 +77,42 @@ app.post("/api/jobs", async (req, res) => {
   }
 });
 
+app.get("/api/jobs", async (req, res) => {
+  try {
+    const { month } = req.query; // e.g. 2025-12
+
+    if (!month) {
+      return res.status(400).json({ error: "缺少 month 參數" });
+    }
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.SPREADSHEET_ID,
+      range: "jobs!A2:F", // 跳過標題列
+    });
+
+    const rows = response.data.values || [];
+
+    const jobs = rows
+      .map(row => ({
+        job_id: row[0],
+        date: row[1],
+        client_name: row[2],
+        hours: Number(row[3]),
+        hourly_rate: Number(row[4]),
+        total: Number(row[5]),
+      }))
+      .filter(job => job.date.startsWith(month));
+
+      console.log(`成功讀取google資料:`, jobs)
+
+    res.json(jobs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "讀取失敗" });
+  }
+});
+
+
 // ===== 伺服器啟動 =====
 const PORT = 3000;
 app.listen(PORT, () => {
