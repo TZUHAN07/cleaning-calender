@@ -1,7 +1,42 @@
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  padding: 20px;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC";
+  background: #f7f9f8;
+  color: #2e2e2e;
 }
+
+.app-header {
+  background: #4caf8f;
+  color: white;
+  padding: 16px;
+  text-align: center;
+}
+
+.container {
+  padding: 16px;
+}
+
+.month-title {
+  margin-bottom: 12px;
+}
+
+.job-list {
+  display: grid;
+  gap: 12px;
+}
+
+.job-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.job-card .price {
+  color: #4caf8f;
+  font-weight: bold;
+}
+
 
 .calendar-header {
   display: flex;

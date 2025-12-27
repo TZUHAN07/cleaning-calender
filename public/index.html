@@ -6,7 +6,17 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>接案月曆</h1>
+    <header class="app-header">
+      <h1>清潔接案管理</h1>
+    </header>
+
+    <main class="container">
+      <h2 class="month-title">2025 年 12 月</h2>
+
+      <section id="jobList" class="job-list">
+        <!-- JS 動態塞卡片 -->
+      </section>
+    </main>
 
     <div class="calendar-header">
       <button id="prevMonth">◀</button>
@@ -37,7 +47,7 @@
         </label>
 
         <p>總金額：<span id="totalPrice">0</span> 元</p>
-        
+
         <div class="modal-actions">
           <button id="saveJob">儲存</button>
           <button id="closeModal">取消</button>

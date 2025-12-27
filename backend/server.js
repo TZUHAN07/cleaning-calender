@@ -1,7 +1,8 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 const { google } = require("googleapis");
 
 const app = express();
@@ -12,27 +13,20 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: "credentials.json",
+  keyFile: path.join(__dirname, "credentials.json"),
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
 // ===== Google Sheets 認證 =====
 const sheets = google.sheets({ version: "v4", auth });
 
-app.get("/", (req, res) => {
-  res.send("清潔接案系統 API 啟動中");
-});
-
 // ===== 建立案件 API =====
 app.post("/api/jobs", async (req, res) => {
   try {
-    console.log("收到 /api/jobs", req.body);
-
     const { date, client_name, hours, hourly_rate } = req.body;
 
     // 驗證必填欄位
     if (!date || !client_name || !hours || !hourly_rate) {
-      console.warn("缺少必填欄位");
       return res.status(400).json({
         error: "缺少必填欄位",
         required: ["date", "client_name", "hours", "hourly_rate"],
@@ -40,8 +34,6 @@ app.post("/api/jobs", async (req, res) => {
     }
 
     const total_price = hours * hourly_rate;
-
-    console.log("spreadsheetId =", process.env.SPREADSHEET_ID);
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.SPREADSHEET_ID,
@@ -61,8 +53,6 @@ app.post("/api/jobs", async (req, res) => {
       },
     });
 
-    console.log("Google Sheets 寫入成功：", response.data);
-
     res.json({
       success: true,
       date,
@@ -77,9 +67,10 @@ app.post("/api/jobs", async (req, res) => {
   }
 });
 
+// API: 讀取當月案件
 app.get("/api/jobs", async (req, res) => {
   try {
-    const { month } = req.query; // e.g. 2025-12
+    const { month } = req.query; 
 
     if (!month) {
       return res.status(400).json({ error: "缺少 month 參數" });
@@ -101,7 +92,7 @@ app.get("/api/jobs", async (req, res) => {
         hourly_rate: Number(row[4]),
         total: Number(row[5]),
       }))
-      .filter(job => job.date.startsWith(month));
+      .filter(job => job.date && job.date.startsWith(month));
 
       console.log(`成功讀取google資料:`, jobs)
 
