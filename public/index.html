@@ -1,60 +1,79 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <title>接案月曆管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>清潔接案系統</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <header class="app-header">
-      <h1>清潔接案管理</h1>
-    </header>
+<body>
+  <!-- ===== 頁面 1：日曆頁 ===== -->
+  <div id="calendarPage" class="page-container active">
+    <div class="container">
+      <div class="header">
+        <h1>清潔接案系統</h1>
+        <p>管理你的工作案件</p>
+      </div>
 
-    <main class="container">
-      <h2 class="month-title">2025 年 12 月</h2>
-
-      <section id="jobList" class="job-list">
-        <!-- JS 動態塞卡片 -->
-      </section>
-    </main>
-
-    <div class="calendar-header">
-      <button id="prevMonth">◀</button>
-      <span id="currentMonth"></span>
-      <button id="nextMonth">▶</button>
-    </div>
-
-    <div class="calendar" id="calendar"></div>
-
-    <!-- 新增案件視窗 -->
-    <div id="jobModal" class="modal hidden">
-      <div class="modal-content">
-        <h2>新增案件</h2>
-
-        <label>
-          客戶名稱
-          <input type="text" id="clientName" />
-        </label>
-
-        <label>
-          工作時數
-          <input type="number" id="hours" />
-        </label>
-
-        <label>
-          時薪
-          <input type="number" id="hourlyRate" />
-        </label>
-
-        <p>總金額：<span id="totalPrice">0</span> 元</p>
-
-        <div class="modal-actions">
-          <button id="saveJob">儲存</button>
-          <button id="closeModal">取消</button>
+      <div class="calendar-wrapper">
+        <div class="calendar-header">
+          <div class="month-nav">
+            <button id="prevMonth">← 上月</button>
+            <button id="nextMonth">下月 →</button>
+          </div>
+          <div id="currentMonth">2025 年 12 月</div>
         </div>
+
+        <div id="calendar"></div>
       </div>
     </div>
+  </div>
 
-    <script src="script.js"></script>
-  </body>
+  <!-- ===== 頁面 2：詳情頁 ===== -->
+  <div id="detailPage" class="page-container">
+    <div class="detail-header">
+      <h1 id="detailDate">2025-12-12</h1>
+      <button class="btn-back" onclick="goToCalendar()">← 返回</button>
+    </div>
+
+    <button class="btn-back" style="width: 100%; margin-bottom: 20px; background: var(--primary-green); color: white;" onclick="openAddJobModal()">+ 新增案件</button>
+
+    <div id="detailJobsList"></div>
+  </div>
+
+  <!-- ===== 新增案件模態框 ===== -->
+  <div id="jobModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">新增工作案件</div>
+
+      <form onsubmit="saveJob(event)">
+        <div class="form-group">
+          <label>客戶名稱</label>
+          <input id="clientName" type="text" placeholder="輸入客戶名稱" required />
+        </div>
+
+        <div class="form-group">
+          <label>工作時數（小時）</label>
+          <input id="hoursInput" type="number" placeholder="輸入工作時數" min="0" step="0.5" required />
+        </div>
+
+        <div class="form-group">
+          <label>時價（$/小時）</label>
+          <input id="hourlyRateInput" type="number" placeholder="輸入時價" min="0" step="10" required />
+        </div>
+
+        <div class="price-display">
+          總金額：$ <span id="totalPriceEl">0</span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn-save">保存</button>
+          <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="script.js"></script> 
+</body>
+
 </html>

@@ -1,38 +1,38 @@
 const calendar = document.getElementById("calendar");
 const currentMonthEl = document.getElementById("currentMonth");
 const modal = document.getElementById("jobModal");
-const closeModalBtn = document.getElementById("closeModal");
-const saveJobBtn = document.getElementById("saveJob");
 const clientName = document.getElementById("clientName");
-const hoursInput = document.getElementById("hours");
-const hourlyRateInput = document.getElementById("hourlyRate");
-const totalPriceEl = document.getElementById("totalPrice");
-const jobList = document.getElementById("jobList");
+const hoursInput = document.getElementById("hoursInput");
+const hourlyRateInput = document.getElementById("hourlyRateInput");
+const totalPriceEl = document.getElementById("totalPriceEl");
+const detailJobsList = document.getElementById("detailJobsList");
+const detailDate = document.getElementById("detailDate");
 
 const jobsByDate = {};
 let selectedDate = "";
 let currentDate = new Date();
 
-function updateTotalPrice() {
-  const hours = Number(hoursInput.value) || 0;
-  const rate = Number(hourlyRateInput.value) || 0;
-  totalPriceEl.textContent = hours * rate;
-}
-
-hoursInput.addEventListener("input", updateTotalPrice);
-hourlyRateInput.addEventListener("input", updateTotalPrice);
-
-// 建議建立一個統一的日期
+// ===== 日期格式化 =====
 function formatDateKey(year, month, day) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
     2,
     "0"
   )}`;
 }
-// 修改渲染日曆的 Key
+
+// ===== 更新總價 =====
+function updateTotalPrice() {
+  const hours = Number(hoursInput.value) || 0;
+  const rate = Number(hourlyRateInput.value) || 0;
+  totalPriceEl.textContent = (hours * rate).toLocaleString();
+}
+
+hoursInput.addEventListener("input", updateTotalPrice);
+hourlyRateInput.addEventListener("input", updateTotalPrice);
+
+// ===== 渲染日曆 =====
 function renderCalendar(date) {
   calendar.innerHTML = "";
-
   const year = date.getFullYear();
   const month = date.getMonth();
 
@@ -46,6 +46,7 @@ function renderCalendar(date) {
     calendar.appendChild(document.createElement("div"));
   }
 
+  // 渲染日期
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEl = document.createElement("div");
     dayEl.className = "day";
@@ -54,26 +55,110 @@ function renderCalendar(date) {
     dayEl.dataset.date = dateKey;
     dayEl.dataset.day = day;
 
-    dayEl.innerHTML = `<div class="day-number">${day}</div>`;
+    let html = `<div class="day-number">${day}</div>`;
+    const jobs = jobsByDate[dateKey] || [];
+    jobs.forEach((job) => {
+      html += `<div class="job-item">${job.client} $${job.total}</div>`;
+    });
 
+    dayEl.innerHTML = html;
+
+    // ===== 點擊進入詳情頁 =====
     dayEl.addEventListener("click", () => {
       selectedDate = dateKey;
-      modal.classList.remove("hidden");
+      goToDetail(dateKey);
     });
 
     calendar.appendChild(dayEl);
   }
 }
 
-renderCalendar(currentDate);
-loadJobsFromServer();
+// ===== 頁面切換：去詳情頁 =====
+function goToDetail(dateKey) {
+  document.getElementById("calendarPage").classList.remove("active");
+  document.getElementById("detailPage").classList.add("active");
+  detailDate.textContent = dateKey;
+  renderDetailJobs(dateKey);
+}
 
-closeModalBtn.addEventListener("click", () => {
-  modal.classList.add("hidden");
-});
+// ===== 頁面切換：返回日曆 =====
+function goToCalendar() {
+  document.getElementById("detailPage").classList.remove("active");
+  document.getElementById("calendarPage").classList.add("active");
+}
 
-saveJobBtn.addEventListener("click", async () => {
-  // 檢查資料抓取是否正常
+// ===== 渲染詳情頁的案件 =====
+function renderDetailJobs(dateKey) {
+  detailJobsList.innerHTML = "";
+  const jobs = jobsByDate[dateKey] || [];
+
+  if (jobs.length === 0) {
+    detailJobsList.innerHTML =
+      '<div class="no-jobs-message">此日期尚無案件</div>';
+    return;
+  }
+
+  let totalHours = 0;
+  let totalAmount = 0;
+
+  jobs.forEach((job) => {
+    totalHours += job.hours || 0;
+    totalAmount += job.total || 0;
+
+    const card = document.createElement("div");
+    card.className = "job-detail-card";
+    card.innerHTML = `
+          <div class="job-client">${job.client}</div>
+          <div class="job-info">
+            <div class="job-info-item">
+              <span class="job-info-label">工作時數</span>
+              <span class="job-info-value">${job.hours || 0} 小時</span>
+            </div>
+            <div class="job-info-item">
+              <span class="job-info-label">時價</span>
+              <span class="job-info-value">$${job.hourly_rate || 0}</span>
+            </div>
+          </div>
+          <div class="job-total">總金額：$${job.total.toLocaleString()}</div>
+        `;
+    detailJobsList.appendChild(card);
+  });
+
+  // 新增摘要
+  const summary = document.createElement("div");
+  summary.className = "summary";
+  summary.innerHTML = `
+        <div class="summary-item">
+          <div class="summary-label">當日總時數</div>
+          <div class="summary-value">${totalHours} 小時</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">當日總金額</div>
+          <div class="summary-value">$${totalAmount.toLocaleString()}</div>
+        </div>
+      `;
+  detailJobsList.appendChild(summary);
+}
+
+// ===== 開啟新增案件模態框 =====
+function openAddJobModal() {
+  modal.classList.add("active");
+  clientName.focus();
+}
+
+// ===== 關閉模態框 =====
+function closeModal() {
+  modal.classList.remove("active");
+  clientName.value = "";
+  hoursInput.value = "";
+  hourlyRateInput.value = "";
+  totalPriceEl.textContent = "0";
+}
+
+// ===== 保存案件 =====
+async function saveJob(event) {
+  event.preventDefault();
+
   const payload = {
     date: selectedDate,
     client_name: clientName.value,
@@ -81,12 +166,7 @@ saveJobBtn.addEventListener("click", async () => {
     hourly_rate: Number(hourlyRateInput.value),
   };
 
-  if (
-    !payload.date ||
-    !payload.client_name ||
-    !payload.hours ||
-    !payload.hourly_rate
-  ) {
+  if (!payload.client_name || !payload.hours || !payload.hourly_rate) {
     alert("請填寫完整資訊");
     return;
   }
@@ -94,19 +174,13 @@ saveJobBtn.addEventListener("click", async () => {
   try {
     const res = await fetch("/api/jobs", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("後端回傳錯誤:", errorData);
-      throw new Error("儲存失敗");
-    }
+    if (!res.ok) throw new Error("儲存失敗");
 
-    const savedJob = await res.json(); // 後端回傳含 total 的資料
+    const savedJob = await res.json();
 
     if (!jobsByDate[selectedDate]) {
       jobsByDate[selectedDate] = [];
@@ -115,17 +189,33 @@ saveJobBtn.addEventListener("click", async () => {
     jobsByDate[selectedDate].push({
       client: savedJob.client_name,
       total: savedJob.total,
+      hours: savedJob.hours,
+      hourly_rate: savedJob.hourly_rate,
     });
 
-    renderJobs();
-    modal.classList.add("hidden");
-    alert("同步成功！");
+    renderCalendar(currentDate);
+    renderDetailJobs(selectedDate);
+    closeModal();
   } catch (err) {
     alert("存檔失敗，請確認後端是否啟動");
     console.error(err);
   }
+}
+
+// ===== 月份切換 =====
+document.getElementById("prevMonth").addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  renderCalendar(currentDate);
+  loadJobsFromServer();
 });
 
+document.getElementById("nextMonth").addEventListener("click", () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  renderCalendar(currentDate);
+  loadJobsFromServer();
+});
+
+// ===== 從伺服器載入案件 =====
 async function loadJobsFromServer() {
   const year = currentDate.getFullYear();
   const month = String(currentDate.getMonth() + 1).padStart(2, "0");
@@ -135,10 +225,7 @@ async function loadJobsFromServer() {
     const res = await fetch(`/api/jobs?month=${monthKey}`);
     const jobs = await res.json();
 
-    if (!Array.isArray(jobs)) {
-      console.error("後端回傳格式錯誤:", jobs);
-      return;
-    }
+    if (!Array.isArray(jobs)) return;
 
     Object.keys(jobsByDate).forEach((key) => delete jobsByDate[key]);
 
@@ -146,7 +233,6 @@ async function loadJobsFromServer() {
       if (!jobsByDate[job.date]) {
         jobsByDate[job.date] = [];
       }
-
       jobsByDate[job.date].push({
         client: job.client_name,
         total: job.total,
@@ -155,45 +241,12 @@ async function loadJobsFromServer() {
       });
     });
 
-    renderCalendarJobs();
-    renderJobs(Object.values(jobsByDate).flat());
+    renderCalendar(currentDate);
   } catch (err) {
     console.error("讀取案件失敗", err);
   }
 }
 
-function renderJobs(jobs) {
-  if (!jobList) return;
-  jobList.innerHTML = "";
-
-  if (!jobs || jobs.length === 0) return;
-
-  jobs.forEach((job) => {
-    const card = document.createElement("div");
-    card.className = "job-card";
-
-    card.innerHTML = `
-      <div style="border-bottom: 1px solid #eee; padding: 10px;">
-        <div><strong>客戶：${job.client}</strong></div>
-        <div class="price">金額：$${job.total}</div>
-        <div>時數：${job.hours || 0} 小時</div>
-      </div>
-    `;
-
-    jobList.appendChild(card);
-  });
-}
-
-function renderCalendarJobs() {
-  document.querySelectorAll(".day").forEach((dayEl) => {
-    const date = dayEl.dataset.date;
-    const jobs = jobsByDate[date] || [];
-
-    let html = `<div class="day-number">${dayEl.dataset.day}</div>`;
-    jobs.forEach((job) => {
-      html += `<div class="job-item">${job.client} $${job.total}</div>`;
-    });
-
-    dayEl.innerHTML = html;
-  });
-}
+// ===== 初始化 =====
+renderCalendar(currentDate);
+loadJobsFromServer();
