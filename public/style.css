@@ -67,36 +67,114 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* ===== 美化年月選擇器 ===== */
 .calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
-#currentMonth {
-  font-size: 1.3rem;
-  color: var(--primary-green);
-  font-weight: 600;
+.month-nav {
+  display: flex;
+  gap: 8px;
 }
 
 .month-nav button {
   background: var(--accent-color);
   border: none;
   color: var(--text-dark);
-  padding: 8px 15px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s;
-  margin: 0 5px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .month-nav button:hover {
   background: #dcc9ba;
   transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
+.month-nav button:active {
+  transform: translateY(0);
+}
+
+/* ===== 年月選擇器美化 ===== */
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.month-selector:focus-within {
+  border-color: var(--primary-green);
+  background: #fffbf7;
+  box-shadow: 0 4px 12px rgba(66, 96, 45, 0.1);
+}
+
+#yearInput {
+  width: 80px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: textfield;
+}
+
+#yearInput:hover,
+#yearInput:focus {
+  border-color: var(--primary-green);
+  outline: none;
+  background: #fffbf7;
+}
+
+.month-selector span {
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+#monthInput {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+#monthInput:hover,
+#monthInput:focus {
+  border-color: var(--primary-green);
+  outline: none;
+  background: #fffbf7;
+}
+
+#monthInput option {
+  padding: 8px;
+  color: var(--text-dark);
+  background: var(--white);
+}
+
+/* ===== 日曆格子 ===== */
 #calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -125,6 +203,15 @@ body {
   box-shadow: 0 4px 12px rgba(66, 96, 45, 0.15);
 }
 
+/* 日期格子被拖進來時亮起 */
+.day.drag-over {
+  background: #ede9e3;
+  border: 2px solid var(--primary-green);
+  box-shadow: 0 4px 12px rgba(66, 96, 45, 0.2);
+  transform: scale(1.02);
+  animation: pulse 0.8s infinite;
+}
+
 .day-number {
   font-weight: 600;
   color: var(--text-dark);
@@ -134,8 +221,19 @@ body {
 
 /* 可拖移的元素游標 */
 .job-item {
-  cursor: move; /* 游標改為「可移動」 */
-  user-select: none; /* 禁止文字選取 */
+  font-size: 0.75rem;
+  color: var(--primary-green);
+  background: rgba(66, 96, 45, 0.1);
+  padding: 4px 6px;
+  border-radius: 4px;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  width: 100%;
+  cursor: move;
+  user-select: none;
   transition: opacity 0.2s, transform 0.2s;
 }
 
@@ -152,28 +250,6 @@ body {
   transform: scale(0.95);
 }
 
-/* 日期格子被拖進來時亮起 */
-.day.drag-over {
-  background: #ede9e3;
-  border: 2px solid var(--primary-green);
-  box-shadow: 0 4px 12px rgba(66, 96, 45, 0.2);
-  transform: scale(1.02);
-}
-
-.job-item {
-  font-size: 0.75rem;
-  color: var(--primary-green);
-  background: rgba(66, 96, 45, 0.1);
-  padding: 2px 4px;
-  border-radius: 3px;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: inline-block;
-  width: 100%;
-}
-
 /* 拖移提示訊息 */
 @keyframes pulse {
   0%,
@@ -185,9 +261,49 @@ body {
   }
 }
 
-.day.drag-over {
-  animation: pulse 0.8s infinite;
+/* ===== 本月總收益美化 ===== */
+.calendar-footer {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
 }
+
+.month-total {
+  background: linear-gradient(135deg, var(--primary-green) 0%, #354620 100%);
+  color: var(--white);
+  padding: 20px 35px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(66, 96, 45, 0.2);
+  width: fit-content;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+
+.month-total:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(66, 96, 45, 0.3);
+}
+
+.month-total-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.month-total-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  position: relative;
+  z-index: 1;
+}
+
 /* ===== 模態框 ===== */
 .modal {
   display: none;
@@ -236,7 +352,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 10px;
   border: 1px solid var(--border-color);
@@ -247,7 +364,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--primary-green);
   background: #fffbf7;
@@ -424,6 +542,19 @@ button {
 }
 
 @media (max-width: 768px) {
+  .calendar-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .month-nav {
+    justify-content: center;
+  }
+
+  .month-selector {
+    justify-content: center;
+  }
+
   .job-info {
     grid-template-columns: 1fr;
   }
@@ -443,5 +574,14 @@ button {
 
   .job-item {
     font-size: 0.7rem;
+  }
+
+  .month-total {
+    min-width: auto;
+    padding: 20px 30px;
+  }
+
+  .month-total-value {
+    font-size: 2rem;
   }
 }
