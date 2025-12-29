@@ -22,23 +22,23 @@
               <button id="nextMonth">下月 →</button>
             </div>
             <div class="month-selector">
-            <input type="number" id="yearInput" min="2020" max="2050" value="2025" />
-            <span>年</span>
-            <select id="monthInput">
-              <option value="0">1月</option>
-              <option value="1">2月</option>
-              <option value="2">3月</option>
-              <option value="3">4月</option>
-              <option value="4">5月</option>
-              <option value="5">6月</option>
-              <option value="6">7月</option>
-              <option value="7">8月</option>
-              <option value="8">9月</option>
-              <option value="9">10月</option>
-              <option value="10">11月</option>
-              <option value="11">12月</option>
-            </select>
-          </div>
+              <input type="number" id="yearInput" min="2020" max="2050" value="2025" />
+              <span>年</span>
+              <select id="monthInput">
+                <option value="0">1月</option>
+                <option value="1">2月</option>
+                <option value="2">3月</option>
+                <option value="3">4月</option>
+                <option value="4">5月</option>
+                <option value="5">6月</option>
+                <option value="6">7月</option>
+                <option value="7">8月</option>
+                <option value="8">9月</option>
+                <option value="9">10月</option>
+                <option value="10">11月</option>
+                <option value="11">12月</option>
+              </select>
+            </div>
           </div>
 
           <div id="calendar"></div>
@@ -46,9 +46,7 @@
           <div class="calendar-footer">
             <div class="month-total">
               <div class="month-total-label">本月總收益</div>
-              <div class="month-total-value">
-                $<span id="monthTotal">0</span>
-              </div>
+              <div class="month-total-value">$<span id="monthTotal">0</span></div>
             </div>
           </div>
         </div>
@@ -60,14 +58,13 @@
       <div class="container" style="max-width: 600px">
         <div class="detail-header">
           <h1 id="detailDate">2025-12-12</h1>
-          <button class="btn-back" onclick="window.app.goToCalendar()">
+          <button class="btn-detail-back" onclick="window.app.goToCalendar()">
             ← 返回
           </button>
         </div>
 
         <button
-          class="btn-back btn-primary"
-          style="width: 100%; margin-bottom: 20px"
+          class="btn-primary"
           onclick="window.app.openAddJobModal()"
         >
           + 新增案件
@@ -93,9 +90,23 @@
             />
           </div>
 
+          <!-- 彈性時間輸入 -->
           <div class="form-group">
-            <label>時間區塊</label>
-            <div class="time-slot-group" id="timeSlotGroup"></div>
+            <label>工作時間</label>
+            <div class="time-input-group">
+              <div class="time-input">
+                <label>開始時間</label>
+                <input id="startTime" type="time" required />
+              </div>
+              <span class="time-separator">～</span>
+              <div class="time-input">
+                <label>結束時間</label>
+                <input id="endTime" type="time" required />
+              </div>
+            </div>
+            <div class="time-hint">
+              預計工作時數：<span id="estimatedHours">0</span> 小時
+            </div>
           </div>
 
           <div class="form-group">
@@ -103,21 +114,29 @@
             <input
               id="hoursInput"
               type="number"
-              placeholder="輸入工作時數"
+              placeholder="自動計算或自行修改"
               min="0"
               step="0.5"
               required
             />
           </div>
 
+          <!-- 彈性價格設定 -->
           <div class="form-group">
             <label>時價（$/小時）</label>
+            <div class="price-preset">
+              <button type="button" class="preset-btn" data-price="400">$400</button>
+              <button type="button" class="preset-btn" data-price="500">$500</button>
+              <button type="button" class="preset-btn" data-price="600">$600</button>
+              <button type="button" class="preset-btn" data-price="700">$700</button>
+              <button type="button" class="preset-btn" data-price="800">$800</button>
+            </div>
             <input
               id="hourlyRateInput"
               type="number"
-              placeholder="輸入時價"
+              placeholder="或自行輸入時價"
               min="0"
-              step="10"
+              step="50"
               required
             />
           </div>

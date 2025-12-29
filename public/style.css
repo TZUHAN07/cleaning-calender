@@ -15,11 +15,13 @@
   padding: 0;
   box-sizing: border-box;
 }
+
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--light-bg);
   color: var(--text-dark);
 }
+
 /* ===== 頁面容器 ===== */
 .page-container {
   display: none;
@@ -97,7 +99,7 @@ body {
 
 .month-nav button:hover {
   background: #dcc9ba;
-  transform: scale(1.05);
+  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -110,8 +112,10 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  background: var(--light-bg);
   padding: 12px 16px;
   border-radius: 10px;
+  border: 2px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
@@ -132,7 +136,13 @@ body {
   background: var(--white);
   cursor: pointer;
   transition: all 0.3s ease;
-  appearance: textfield;
+  appearance: textfield;  /* 隱藏上下箭頭 */
+}
+
+#yearInput::-webkit-outer-spin-button,
+#yearInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 #yearInput:hover,
@@ -203,7 +213,6 @@ body {
   box-shadow: 0 4px 12px rgba(66, 96, 45, 0.15);
 }
 
-/* 日期格子被拖進來時亮起 */
 .day.drag-over {
   background: #ede9e3;
   border: 2px solid var(--primary-green);
@@ -219,7 +228,7 @@ body {
   font-size: 0.95rem;
 }
 
-/* 可拖移的元素游標 */
+/* ===== 統一 job-item 樣式（不重複） ===== */
 .job-item {
   font-size: 0.75rem;
   color: var(--primary-green);
@@ -237,23 +246,20 @@ body {
   transition: opacity 0.2s, transform 0.2s;
 }
 
-/* 滑鼠懸停在案件時 */
 .job-item:hover {
   opacity: 0.8;
   transform: scale(1.05);
   box-shadow: 0 2px 6px rgba(66, 96, 45, 0.2);
 }
 
-/* 被拖移中的案件 */
 .job-item.dragging {
   opacity: 0.5;
   transform: scale(0.95);
 }
 
-/* 拖移提示訊息 */
+/* ===== 拖移動畫 ===== */
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
   50% {
@@ -261,7 +267,7 @@ body {
   }
 }
 
-/* ===== 本月總收益美化 ===== */
+/* ===== 🆕 本月總收益美化 ===== */
 .calendar-footer {
   margin-top: 30px;
   display: flex;
@@ -281,6 +287,16 @@ body {
   overflow: hidden;
 }
 
+.month-total::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
 
 .month-total:hover {
   transform: translateY(-4px);
@@ -288,16 +304,16 @@ body {
 }
 
 .month-total-label {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 500;
   letter-spacing: 1px;
   opacity: 0.9;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
 }
 
 .month-total-value {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   letter-spacing: 2px;
   position: relative;
@@ -382,12 +398,6 @@ select:focus {
   font-size: 1.1rem;
 }
 
-.modal-footer {
-  display: flex;
-  gap: 10px;
-  margin-top: 25px;
-}
-
 button {
   flex: 1;
   padding: 12px;
@@ -453,6 +463,44 @@ button {
 
 .btn-back:hover {
   background: #dcc9ba;
+}
+
+/* 詳情頁返回按鈕 */
+.btn-detail-back {
+  background: var(--accent-color);
+  color: var(--text-dark);
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: all 0.3s;
+}
+
+.btn-detail-back:hover {
+  background: #dcc9ba;
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: var(--primary-green);
+  color: white;
+  width: auto;
+  display: inline-block;
+  padding: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.btn-primary:hover {
+  background: #354620;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 96, 45, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .job-detail-card {
@@ -541,6 +589,7 @@ button {
   color: var(--primary-green);
 }
 
+/* ===== 響應式設計 ===== */
 @media (max-width: 768px) {
   .calendar-header {
     flex-direction: column;

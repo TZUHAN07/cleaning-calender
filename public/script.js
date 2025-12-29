@@ -2,33 +2,75 @@
 window.app = {
   // ===== DOM 參考 =====
   calendar: document.getElementById("calendar"),
-  currentMonthEl: document.getElementById("currentMonth"),
   monthTotalEl: document.getElementById("monthTotal"),
   modal: document.getElementById("jobModal"),
   clientName: document.getElementById("clientName"),
+  startTime: document.getElementById("startTime"),
+  endTime: document.getElementById("endTime"),
+  estimatedHours: document.getElementById("estimatedHours"),
   hoursInput: document.getElementById("hoursInput"),
   hourlyRateInput: document.getElementById("hourlyRateInput"),
   totalPriceEl: document.getElementById("totalPriceEl"),
   detailJobsList: document.getElementById("detailJobsList"),
   detailDate: document.getElementById("detailDate"),
-  timeSlotGroup: document.getElementById("timeSlotGroup"),
 
   // ===== 應用狀態 =====
   jobsByDate: {},
   selectedDate: "",
   currentDate: new Date(),
-  selectedTimeSlot: "",
   draggedJob: null,
 
-  // ===== 常數 =====
-  TIME_SLOTS: ["09:00-11:00", "11:00-13:00", "13:00-15:00", "15:00-17:00", "17:00-19:00", "19:00-21:00"],
-
-    // ===== 日期格式化 =====
+  // ===== 日期格式化 =====
   formatDateKey(year, month, day) {
-    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
+      2,
+      "0"
+    )}`;
   },
 
-  // ===== 計算總金額 =====
+  // ===== 計算工作時數 =====
+  calculateHours() {
+    const start = this.startTime.value;
+    const end = this.endTime.value;
+
+    if (!start || !end) {
+      this.estimatedHours.textContent = "0";
+      return;
+    }
+
+    const [startHour, startMin] = start.split(":").map(Number);
+    const [endHour, endMin] = end.split(":").map(Number);
+
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+
+    let diffMin = endTotalMin - startTotalMin;
+
+    // 跨越午夜的情況（例如 23:00 到 02:00）
+    if (diffMin < 0) {
+      diffMin += 24 * 60;
+    }
+
+    const hours = (diffMin / 60).toFixed(1);
+    this.estimatedHours.textContent = hours;
+    this.hoursInput.value = hours;
+    this.updateTotalPrice();
+  },
+
+  // ===== 設定預設價格 =====
+  setPresetPrice(price) {
+    this.hourlyRateInput.value = price;
+
+    // 更新按鈕狀態
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+    event.target.classList.add("active");
+
+    this.updateTotalPrice();
+  },
+
+  // ===== 更新總金額 =====
   updateTotalPrice() {
     const hours = Number(this.hoursInput.value) || 0;
     const rate = Number(this.hourlyRateInput.value) || 0;
@@ -38,28 +80,28 @@ window.app = {
   // ===== 計算月總收益 =====
   calculateMonthTotal() {
     let total = 0;
-    Object.values(this.jobsByDate).forEach(jobs => {
-      jobs.forEach(job => {
+    Object.values(this.jobsByDate).forEach((jobs) => {
+      jobs.forEach((job) => {
         total += job.total || 0;
       });
     });
     this.monthTotalEl.textContent = total.toLocaleString();
   },
 
-  // =====拖移開始 =====
+  // ===== 拖移開始 =====
   startDrag(event, dateKey, jobIndex) {
     this.draggedJob = {
       fromDate: dateKey,
       jobIndex: jobIndex,
-      job: { ...this.jobsByDate[dateKey][jobIndex] }  // 複製案件資料
+      job: { ...this.jobsByDate[dateKey][jobIndex] },
     };
-    event.target.style.opacity = "0.5";  // 半透明表示被拖移
+    event.target.style.opacity = "0.5";
   },
 
   // ===== 允許放下 =====
   allowDrop(event) {
-    event.preventDefault();  // 必須加才能觸發 drop
-    event.currentTarget.style.backgroundColor = "#ede9e3";  // 亮起來
+    event.preventDefault();
+    event.currentTarget.style.backgroundColor = "#ede9e3";
   },
 
   // ===== 移出時移除亮起 =====
@@ -72,13 +114,12 @@ window.app = {
   // ===== 放下案件 =====
   async dropJob(event, toDate) {
     event.preventDefault();
-    event.currentTarget.style.backgroundColor = "";  // 移除亮起
-    
+    event.currentTarget.style.backgroundColor = "";
+
     if (!this.draggedJob) return;
 
     const { fromDate, jobIndex, job } = this.draggedJob;
 
-    // 如果放在同一天就不做什麼
     if (fromDate === toDate) {
       this.draggedJob = null;
       this.renderCalendar(this.currentDate);
@@ -86,27 +127,24 @@ window.app = {
     }
 
     try {
-      //  後端更新案件日期
       const res = await fetch(`/api/jobs/${job.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: toDate })
+        body: JSON.stringify({ date: toDate }),
       });
 
       if (!res.ok) throw new Error("更新失敗");
 
-      // ✅ 前端更新資料
-      this.jobsByDate[fromDate].splice(jobIndex, 1);  // 從舊日期移除
-      
+      // 前端更新資料
+      this.jobsByDate[fromDate].splice(jobIndex, 1);
+
       if (!this.jobsByDate[toDate]) {
         this.jobsByDate[toDate] = [];
       }
-      this.jobsByDate[toDate].push(job);  // 加到新日期
+      this.jobsByDate[toDate].push(job);
 
-      // 重新畫日曆
       this.renderCalendar(this.currentDate);
       this.calculateMonthTotal();
-
     } catch (err) {
       alert("移動失敗，請稍後重試");
       console.error(err);
@@ -115,24 +153,7 @@ window.app = {
     this.draggedJob = null;
   },
 
-  // ===== 初始化時間區塊 =====
-  initializeTimeSlots() {
-    this.timeSlotGroup.innerHTML = "";
-    this.TIME_SLOTS.forEach(slot => {
-      const btn = document.createElement("div");
-      btn.className = "time-slot";
-      btn.textContent = slot;
-      btn.onclick = () => {
-        document.querySelectorAll(".time-slot").forEach(s => s.classList.remove("selected"));
-        btn.classList.add("selected");
-        this.selectedTimeSlot = slot;
-      };
-      this.timeSlotGroup.appendChild(btn);
-    });
-  },
-
-
-  // ===== 渲染日曆 =====
+  // ===== 畫日曆 =====
   renderCalendar(date) {
     this.calendar.innerHTML = "";
     const year = date.getFullYear();
@@ -141,25 +162,24 @@ window.app = {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // 空白補齊
+    // 補空白
     for (let i = 0; i < firstDay; i++) {
       this.calendar.appendChild(document.createElement("div"));
     }
 
-    // 渲染日期
+    // 畫日期
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEl = document.createElement("div");
       dayEl.className = "day";
 
-     dayEl.dataset.date = this.formatDateKey(year, month + 1, day);
+      dayEl.dataset.date = this.formatDateKey(year, month + 1, day);
 
       let html = `<div class="day-number">${day}</div>`;
-      
+
       const dateKey = this.formatDateKey(year, month + 1, day);
       const jobs = this.jobsByDate[dateKey] || [];
-      
+
       jobs.forEach((job, index) => {
-        // 加上 draggable 屬性
         html += `
           <div class="job-item" 
                draggable="true"
@@ -171,16 +191,15 @@ window.app = {
         `;
       });
 
-
       dayEl.innerHTML = html;
 
-      // 加上拖移事件監聽
+      // 拖移事件監聽
       dayEl.ondragover = (e) => this.allowDrop(e);
       dayEl.ondragleave = (e) => this.dragLeave(e);
       dayEl.ondrop = (e) => this.dropJob(e, dateKey);
 
       dayEl.addEventListener("click", (e) => {
-        if (e.target.classList.contains("job-item")) return;  // 不要點到案件時跳頁
+        if (e.target.classList.contains("job-item")) return;
         this.selectedDate = dateKey;
         this.goToDetail(dateKey);
       });
@@ -191,7 +210,7 @@ window.app = {
     this.calculateMonthTotal();
   },
 
-  // ===== 頁面切換：去詳情頁 =====
+  // ===== 跳到詳情頁 =====
   goToDetail(dateKey) {
     document.getElementById("calendarPage").classList.remove("active");
     document.getElementById("detailPage").classList.add("active");
@@ -199,26 +218,27 @@ window.app = {
     this.renderDetailJobs(dateKey);
   },
 
-  // ===== 頁面切換：返回日曆 =====
+  // ===== 回到日曆 =====
   goToCalendar() {
     document.getElementById("detailPage").classList.remove("active");
     document.getElementById("calendarPage").classList.add("active");
   },
 
-  // ===== 渲染詳情頁的案件 =====
+  // ===== 畫詳情頁案件 =====
   renderDetailJobs(dateKey) {
     this.detailJobsList.innerHTML = "";
     const jobs = this.jobsByDate[dateKey] || [];
 
     if (jobs.length === 0) {
-      this.detailJobsList.innerHTML = '<div class="no-jobs-message">此日期尚無案件</div>';
+      this.detailJobsList.innerHTML =
+        '<div class="no-jobs-message">此日期尚無案件</div>';
       return;
     }
 
     let totalHours = 0;
     let totalAmount = 0;
 
-    jobs.forEach(job => {
+    jobs.forEach((job) => {
       totalHours += job.hours || 0;
       totalAmount += job.total || 0;
 
@@ -263,10 +283,22 @@ window.app = {
     this.detailJobsList.appendChild(summary);
   },
 
-  // ===== 開啟新增案件模態框 =====
+  // ===== 開啟新增模態框 =====
   openAddJobModal() {
-    this.initializeTimeSlots();
-    this.selectedTimeSlot = "";
+    // 重置表單
+    this.clientName.value = "";
+    this.startTime.value = "";
+    this.endTime.value = "";
+    this.hoursInput.value = "";
+    this.hourlyRateInput.value = "";
+    this.totalPriceEl.textContent = "0";
+    this.estimatedHours.textContent = "0";
+
+    // 重置按鈕狀態
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+
     this.modal.classList.add("active");
     this.clientName.focus();
   },
@@ -274,14 +306,9 @@ window.app = {
   // ===== 關閉模態框 =====
   closeModal() {
     this.modal.classList.remove("active");
-    this.clientName.value = "";
-    this.hoursInput.value = "";
-    this.hourlyRateInput.value = "";
-    this.totalPriceEl.textContent = "0";
-    this.selectedTimeSlot = "";
   },
 
-  // ===== 保存案件 =====
+  // ===== 儲存案件 =====
   async saveJob(event) {
     event.preventDefault();
 
@@ -290,7 +317,7 @@ window.app = {
       client_name: this.clientName.value,
       hours: Number(this.hoursInput.value),
       hourly_rate: Number(this.hourlyRateInput.value),
-      time_slot: this.selectedTimeSlot,
+      time_slot: `${this.startTime.value}～${this.endTime.value}`,
     };
 
     if (!payload.client_name || !payload.hours || !payload.hourly_rate) {
@@ -319,7 +346,7 @@ window.app = {
         total: savedJob.total,
         hours: savedJob.hours,
         hourly_rate: savedJob.hourly_rate,
-        timeSlot: this.selectedTimeSlot,
+        timeSlot: payload.time_slot,
       });
 
       this.renderCalendar(this.currentDate);
@@ -343,9 +370,11 @@ window.app = {
 
       if (!Array.isArray(jobs)) return;
 
-      Object.keys(this.jobsByDate).forEach(key => delete this.jobsByDate[key]);
+      Object.keys(this.jobsByDate).forEach(
+        (key) => delete this.jobsByDate[key]
+      );
 
-      jobs.forEach(job => {
+      jobs.forEach((job) => {
         if (!this.jobsByDate[job.date]) {
           this.jobsByDate[job.date] = [];
         }
@@ -380,14 +409,45 @@ window.app = {
       this.loadJobsFromServer();
     });
 
+    // 年月選擇器事件
+    document.getElementById("yearInput").addEventListener("change", () => {
+      const year = Number(document.getElementById("yearInput").value);
+      const month = Number(document.getElementById("monthInput").value);
+      this.currentDate = new Date(year, month, 1);
+      this.renderCalendar(this.currentDate);
+      this.loadJobsFromServer();
+    });
+
+    document.getElementById("monthInput").addEventListener("change", () => {
+      const year = Number(document.getElementById("yearInput").value);
+      const month = Number(document.getElementById("monthInput").value);
+      this.currentDate = new Date(year, month, 1);
+      this.renderCalendar(this.currentDate);
+      this.loadJobsFromServer();
+    });
+
     // 時數和時價輸入事件
     this.hoursInput.addEventListener("input", () => this.updateTotalPrice());
-    this.hourlyRateInput.addEventListener("input", () => this.updateTotalPrice());
+    this.hourlyRateInput.addEventListener("input", () =>
+      this.updateTotalPrice()
+    );
+
+    // 時間輸入事件
+    this.startTime.addEventListener("change", () => this.calculateHours());
+    this.endTime.addEventListener("change", () => this.calculateHours());
+
+    // 預設價格按鈕事件
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.setPresetPrice(btn.dataset.price);
+      });
+    });
 
     // 初始化
     this.renderCalendar(this.currentDate);
     this.loadJobsFromServer();
-  }
+  },
 };
 
 // ===== 頁面載入完成後初始化應用 =====
