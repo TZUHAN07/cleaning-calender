@@ -96,12 +96,34 @@
             <div class="time-input-group">
               <div class="time-input">
                 <label>開始時間</label>
-                <input id="startTime" type="time" required />
+                <div class="time-select-group">
+                  <select id="startPeriod">
+                    <option value="am">上午</option>
+                    <option value="pm">下午</option>
+                  </select>
+                  <input id="startHour" type="number" min="1" max="12" placeholder="時" />
+                  <span class="time-colon">:</span>
+                  <select id="startMin">
+                    <option value="00">00</option>
+                    <option value="30">30</option>
+                  </select>
+                </div>
               </div>
-              <span class="time-separator">～</span>
+              <!-- <span class="time-separator">～</span> -->
               <div class="time-input">
                 <label>結束時間</label>
-                <input id="endTime" type="time" required />
+                <div class="time-select-group">
+                  <select id="endPeriod">
+                    <option value="am">上午</option>
+                    <option value="pm">下午</option>
+                  </select>
+                  <input id="endHour" type="number" min="1" max="12" placeholder="時" />
+                  <span class="time-colon">:</span>
+                  <select id="endMin">
+                    <option value="00">00</option>
+                    <option value="30">30</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div class="time-hint">

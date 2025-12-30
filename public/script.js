@@ -5,8 +5,12 @@ window.app = {
   monthTotalEl: document.getElementById("monthTotal"),
   modal: document.getElementById("jobModal"),
   clientName: document.getElementById("clientName"),
-  startTime: document.getElementById("startTime"),
-  endTime: document.getElementById("endTime"),
+  startPeriod: document.getElementById("startPeriod"),
+  startHour: document.getElementById("startHour"),
+  startMin: document.getElementById("startMin"),
+  endPeriod: document.getElementById("endPeriod"),
+  endHour: document.getElementById("endHour"),
+  endMin: document.getElementById("endMin"),
   estimatedHours: document.getElementById("estimatedHours"),
   hoursInput: document.getElementById("hoursInput"),
   hourlyRateInput: document.getElementById("hourlyRateInput"),
@@ -30,19 +34,18 @@ window.app = {
 
   // ===== 計算工作時數 =====
   calculateHours() {
-    const start = this.startTime.value;
-    const end = this.endTime.value;
+    const startH = Number(this.startHour.value);
+    const startM = Number(this.startMin.value);
+    const endH = Number(this.endHour.value);
+    const endM = Number(this.endMin.value);
 
-    if (!start || !end) {
+    if (!this.startHour.value || !this.endHour.value) {
       this.estimatedHours.textContent = "0";
       return;
     }
 
-    const [startHour, startMin] = start.split(":").map(Number);
-    const [endHour, endMin] = end.split(":").map(Number);
-
-    const startTotalMin = startHour * 60 + startMin;
-    const endTotalMin = endHour * 60 + endMin;
+    const startTotalMin = startH * 60 + startM;
+    const endTotalMin = endH * 60 + endM;
 
     let diffMin = endTotalMin - startTotalMin;
 
@@ -58,15 +61,14 @@ window.app = {
   },
 
   // ===== 設定預設價格 =====
-  setPresetPrice(price) {
+  setPresetPrice(price, btnEl) {
     this.hourlyRateInput.value = price;
 
     // 更新按鈕狀態
     document.querySelectorAll(".preset-btn").forEach((btn) => {
       btn.classList.remove("active");
     });
-    event.target.classList.add("active");
-
+    btnEl.classList.add("active");
     this.updateTotalPrice();
   },
 
@@ -238,14 +240,17 @@ window.app = {
     let totalHours = 0;
     let totalAmount = 0;
 
-    jobs.forEach((job) => {
+    jobs.forEach((job, jobIndex) => {
       totalHours += job.hours || 0;
       totalAmount += job.total || 0;
 
       const card = document.createElement("div");
       card.className = "job-detail-card";
       card.innerHTML = `
-        <div class="job-client">${job.client}</div>
+        <div class="job-card-header">
+          <div class="job-client">${job.client}</div>
+          <button class="btn-delete-job" data-date="${dateKey}" data-index="${jobIndex}" title="刪除案件">✕</button>
+        </div>
         <div class="job-info">
           <div class="job-info-item">
             <span class="job-info-label">時間區塊</span>
@@ -259,10 +264,10 @@ window.app = {
         <div class="job-info">
           <div class="job-info-item">
             <span class="job-info-label">時價</span>
-            <span class="job-info-value">$${job.hourly_rate || 0}</span>
+            <span class="job-info-value">${job.hourly_rate || 0}</span>
           </div>
         </div>
-        <div class="job-total">總金額：$${job.total.toLocaleString()}</div>
+        <div class="job-total">總金額：${job.total.toLocaleString()}</div>
       `;
       this.detailJobsList.appendChild(card);
     });
@@ -281,14 +286,28 @@ window.app = {
       </div>
     `;
     this.detailJobsList.appendChild(summary);
+
+    // 綁定刪除按鈕事件
+    document.querySelectorAll(".btn-delete-job").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const date = btn.dataset.date;
+        const index = Number(btn.dataset.index);
+        this.deleteJob(date, index);
+      });
+    });
   },
 
   // ===== 開啟新增模態框 =====
   openAddJobModal() {
     // 重置表單
     this.clientName.value = "";
-    this.startTime.value = "";
-    this.endTime.value = "";
+    this.startPeriod.value = "am";
+    this.startHour.value = "";
+    this.startMin.value = "00";
+    this.endPeriod.value = "am";
+    this.endHour.value = "";
+    this.endMin.value = "00";
     this.hoursInput.value = "";
     this.hourlyRateInput.value = "";
     this.totalPriceEl.textContent = "0";
@@ -303,6 +322,41 @@ window.app = {
     this.clientName.focus();
   },
 
+   // ===== 刪除案件 =====
+  async deleteJob(dateKey, jobIndex) {
+    if (!confirm("確定要刪除此案件嗎？")) {
+      return;
+    }
+
+    const job = this.jobsByDate[dateKey][jobIndex];
+
+    try {
+      const res = await fetch(`/api/jobs/${job.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("刪除失敗");
+
+      // 前端刪除資料
+      this.jobsByDate[dateKey].splice(jobIndex, 1);
+
+      // 如果該日期沒有案件了，刪除該日期的鍵
+      if (this.jobsByDate[dateKey].length === 0) {
+        delete this.jobsByDate[dateKey];
+      }
+
+      // 重新渲染
+      this.renderDetailJobs(dateKey);
+      this.renderCalendar(this.currentDate);
+      this.calculateMonthTotal();
+    } catch (err) {
+      alert("刪除失敗，請稍後重試");
+      console.error(err);
+    }
+  },
+
+
   // ===== 關閉模態框 =====
   closeModal() {
     this.modal.classList.remove("active");
@@ -312,12 +366,15 @@ window.app = {
   async saveJob(event) {
     event.preventDefault();
 
+    const startTimeStr = `${String(this.startHour.value).padStart(2, "0")}:${this.startMin.value}`;
+    const endTimeStr = `${String(this.endHour.value).padStart(2, "0")}:${this.endMin.value}`;
+
     const payload = {
       date: this.selectedDate,
       client_name: this.clientName.value,
       hours: Number(this.hoursInput.value),
       hourly_rate: Number(this.hourlyRateInput.value),
-      time_slot: `${this.startTime.value}～${this.endTime.value}`,
+      time_slot: `${startTimeStr}～${endTimeStr}`,
     };
 
     if (!payload.client_name || !payload.hours || !payload.hourly_rate) {
@@ -374,7 +431,7 @@ window.app = {
         (key) => delete this.jobsByDate[key]
       );
 
-      jobs.forEach((job) => {
+      jobs.forEach((job,jobIndex) => {
         if (!this.jobsByDate[job.date]) {
           this.jobsByDate[job.date] = [];
         }
@@ -410,21 +467,28 @@ window.app = {
     });
 
     // 年月選擇器事件
-    document.getElementById("yearInput").addEventListener("change", () => {
-      const year = Number(document.getElementById("yearInput").value);
-      const month = Number(document.getElementById("monthInput").value);
-      this.currentDate = new Date(year, month, 1);
-      this.renderCalendar(this.currentDate);
-      this.loadJobsFromServer();
-    });
+    const yearInput = document.getElementById("yearInput");
+    const monthInput = document.getElementById("monthInput");
 
-    document.getElementById("monthInput").addEventListener("change", () => {
-      const year = Number(document.getElementById("yearInput").value);
-      const month = Number(document.getElementById("monthInput").value);
-      this.currentDate = new Date(year, month, 1);
-      this.renderCalendar(this.currentDate);
-      this.loadJobsFromServer();
-    });
+    if (yearInput) {
+      yearInput.addEventListener("change", () => {
+        const year = Number(yearInput.value);
+        const month = Number(monthInput.value);
+        this.currentDate = new Date(year, month, 1);
+        this.renderCalendar(this.currentDate);
+        this.loadJobsFromServer();
+      });
+    }
+
+    if (monthInput) {
+      monthInput.addEventListener("change", () => {
+        const year = Number(yearInput.value);
+        const month = Number(monthInput.value);
+        this.currentDate = new Date(year, month, 1);
+        this.renderCalendar(this.currentDate);
+        this.loadJobsFromServer();
+      });
+    }
 
     // 時數和時價輸入事件
     this.hoursInput.addEventListener("input", () => this.updateTotalPrice());
@@ -432,15 +496,31 @@ window.app = {
       this.updateTotalPrice()
     );
 
-    // 時間輸入事件
-    this.startTime.addEventListener("change", () => this.calculateHours());
-    this.endTime.addEventListener("change", () => this.calculateHours());
+    // 時間輸入事件 - 確保這些元素存在
+    if (this.startPeriod) {
+      this.startPeriod.addEventListener("change", () => this.calculateHours());
+    }
+    if (this.startHour) {
+      this.startHour.addEventListener("change", () => this.calculateHours());
+    }
+    if (this.startMin) {
+      this.startMin.addEventListener("change", () => this.calculateHours());
+    }
+    if (this.endPeriod) {
+      this.endPeriod.addEventListener("change", () => this.calculateHours());
+    }
+    if (this.endHour) {
+      this.endHour.addEventListener("change", () => this.calculateHours());
+    }
+    if (this.endMin) {
+      this.endMin.addEventListener("change", () => this.calculateHours());
+    }
 
     // 預設價格按鈕事件
     document.querySelectorAll(".preset-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
-        this.setPresetPrice(btn.dataset.price);
+        this.setPresetPrice(btn.dataset.price, btn);
       });
     });
 

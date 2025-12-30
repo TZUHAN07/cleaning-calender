@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===== 提供靜態文件（前端 HTML/CSS/JS）=====
+// ===== 提供前端 =====
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 const auth = new google.auth.GoogleAuth({
@@ -163,53 +163,33 @@ app.put("/api/jobs/:jobId", async (req, res) => {
   }
 });
 
-// ===== 🆕 刪除案件（額外功能） =====
+// 刪除案件 API
 app.delete("/api/jobs/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A2:G",
+      range: "jobs!A2:F",
     });
 
     const rows = response.data.values || [];
-    let targetRowIndex = -1;
 
-    rows.forEach((row, index) => {
-      if (row[0] === jobId) {
-        targetRowIndex = index;
-      }
-    });
+    const rowIndex = rows.findIndex(row => row[0] === jobId);
 
-    if (targetRowIndex === -1) {
-      return res.status(404).json({ error: "找不到案件" });
+    if (rowIndex === -1) {
+      return res.status(404).json({ error: "找不到該訂單" });
     }
 
-    // 刪除該列
-    rows.splice(targetRowIndex, 1);
+    // Google Sheets 的 row index 要 +2（因為 A2 起算）
+    const sheetRowNumber = rowIndex + 2;
 
-    // 重新寫入所有資料
     await sheets.spreadsheets.values.clear({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A2:G",
+      range: `jobs!A${sheetRowNumber}:F${sheetRowNumber}`,
     });
 
-    if (rows.length > 0) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: process.env.SPREADSHEET_ID,
-        range: "jobs!A2:G",
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: rows,
-        },
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "案件已刪除",
-    });
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "刪除失敗" });

@@ -136,7 +136,7 @@ body {
   background: var(--white);
   cursor: pointer;
   transition: all 0.3s ease;
-  appearance: textfield;  /* 隱藏上下箭頭 */
+  appearance: textfield; /* 隱藏上下箭頭 */
 }
 
 #yearInput::-webkit-outer-spin-button,
@@ -259,7 +259,8 @@ body {
 
 /* ===== 拖移動畫 ===== */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -344,6 +345,8 @@ body {
   padding: 30px;
   max-width: 500px;
   width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -367,6 +370,89 @@ label {
   font-size: 0.9rem;
 }
 
+/* 改進時間輸入樣式 */
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-input {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-input > label {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: var(--text-light);
+}
+
+.time-select-group {
+  display: grid;
+  grid-template-columns: 60px 70px 30px 70px;
+  gap: 4px;
+  align-items: center;
+}
+
+.time-select-group select:first-child {
+  padding: 10px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.time-select-group input[type="number"] {
+  padding: 10px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  background: var(--white);
+}
+
+.time-colon {
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-dark);
+}
+
+.time-select-group select:last-child {
+  padding: 10px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.time-separator {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-light);
+  align-self: center;
+}
+
+.time-hint {
+  background: #f5f2ef;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  margin-top: 6px;
+  border-left: 3px solid var(--primary-green);
+}
+
+.time-hint span {
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
 input,
 textarea,
 select {
@@ -387,6 +473,39 @@ select:focus {
   background: #fffbf7;
 }
 
+/*改進價格預設按鈕 */
+.price-preset {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.preset-btn {
+  padding: 8px 0;
+  border: 2px solid var(--border-color);
+  background: var(--white);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.preset-btn:hover {
+  border-color: var(--primary-green);
+  background: #fffbf7;
+  transform: translateY(-2px);
+}
+
+.preset-btn.active {
+  background: var(--primary-green);
+  color: var(--white);
+  border-color: var(--primary-green);
+}
+
 .price-display {
   background: var(--accent-color);
   color: var(--text-dark);
@@ -396,6 +515,13 @@ select:focus {
   text-align: center;
   margin: 15px 0;
   font-size: 1.1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+  justify-content: center;
 }
 
 button {
@@ -469,7 +595,8 @@ button {
 .btn-detail-back {
   background: var(--accent-color);
   color: var(--text-dark);
-  padding: 8px 16px;
+  padding: 8px 12px;
+  min-width: fit-content;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -477,6 +604,8 @@ button {
   font-size: 0.9rem;
   white-space: nowrap;
   transition: all 0.3s;
+  min-width: fit-content;
+  flex: 0;
 }
 
 .btn-detail-back:hover {
@@ -518,11 +647,46 @@ button {
   box-shadow: 0 4px 12px rgba(66, 96, 45, 0.15);
 }
 
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
 .job-client {
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--primary-green);
-  margin-bottom: 10px;
+}
+
+/*刪除按鈕 */
+.btn-delete-job {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex: none;
+}
+
+.btn-delete-job:hover {
+  background: #ff5252;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-delete-job:active {
+  transform: scale(0.95);
 }
 
 .job-info {
