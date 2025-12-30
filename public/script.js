@@ -264,10 +264,10 @@ window.app = {
         <div class="job-info">
           <div class="job-info-item">
             <span class="job-info-label">時價</span>
-            <span class="job-info-value">${job.hourly_rate || 0}</span>
+            <span class="job-info-value">$${job.hourly_rate || 0}</span>
           </div>
         </div>
-        <div class="job-total">總金額：${job.total.toLocaleString()}</div>
+        <div class="job-total">總金額：$${job.total.toLocaleString()}</div>
       `;
       this.detailJobsList.appendChild(card);
     });
@@ -453,15 +453,24 @@ window.app = {
 
   // ===== 初始化應用 =====
   init() {
+    // 更新年月選擇器
+    const updateYearMonthSelector = () => {
+      const yearInput = document.getElementById("yearInput");
+      const monthInput = document.getElementById("monthInput");
+      if (yearInput) yearInput.value = this.currentDate.getFullYear();
+      if (monthInput) monthInput.value = this.currentDate.getMonth();
+    };
     // 月份切換事件
     document.getElementById("prevMonth").addEventListener("click", () => {
       this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+      updateYearMonthSelector();
       this.renderCalendar(this.currentDate);
       this.loadJobsFromServer();
     });
 
     document.getElementById("nextMonth").addEventListener("click", () => {
       this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+      updateYearMonthSelector();
       this.renderCalendar(this.currentDate);
       this.loadJobsFromServer();
     });
@@ -501,7 +510,7 @@ window.app = {
       this.startPeriod.addEventListener("change", () => this.calculateHours());
     }
     if (this.startHour) {
-      this.startHour.addEventListener("change", () => this.calculateHours());
+      this.startHour.addEventListener("input", () => this.calculateHours());
     }
     if (this.startMin) {
       this.startMin.addEventListener("change", () => this.calculateHours());
@@ -510,7 +519,7 @@ window.app = {
       this.endPeriod.addEventListener("change", () => this.calculateHours());
     }
     if (this.endHour) {
-      this.endHour.addEventListener("change", () => this.calculateHours());
+      this.endHour.addEventListener("input", () => this.calculateHours());
     }
     if (this.endMin) {
       this.endMin.addEventListener("change", () => this.calculateHours());
@@ -525,6 +534,7 @@ window.app = {
     });
 
     // 初始化
+    updateYearMonthSelector();
     this.renderCalendar(this.currentDate);
     this.loadJobsFromServer();
   },
