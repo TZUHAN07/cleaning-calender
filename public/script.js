@@ -1,10 +1,11 @@
-// ===== 應用物件（命名空間，避免全域污染） =====
+// ===== 應用物件（命名空間，避免全域汙染） =====
 window.app = {
   // ===== DOM 參考 =====
   calendar: document.getElementById("calendar"),
   monthTotalEl: document.getElementById("monthTotal"),
   modal: document.getElementById("jobModal"),
   clientName: document.getElementById("clientName"),
+  addressInput: document.getElementById("addressInput"),
   startPeriod: document.getElementById("startPeriod"),
   startHour: document.getElementById("startHour"),
   startMin: document.getElementById("startMin"),
@@ -23,6 +24,7 @@ window.app = {
   selectedDate: "",
   currentDate: new Date(),
   draggedJob: null,
+  editJobId: null, // 編輯用的 job ID
 
   // ===== 日期格式化 =====
   formatDateKey(year, month, day) {
@@ -249,11 +251,14 @@ window.app = {
       card.innerHTML = `
         <div class="job-card-header">
           <div class="job-client">${job.client}</div>
-          <button class="btn-delete-job" data-date="${dateKey}" data-index="${jobIndex}" title="刪除案件">✕</button>
+          <div class="job-card-buttons">
+            <button class="btn-edit-job" data-date="${dateKey}" data-index="${jobIndex}" title="編輯案件">✏️</button>
+            <button class="btn-delete-job" data-date="${dateKey}" data-index="${jobIndex}" title="刪除案件">✕</button>
+          </div>
         </div>
         <div class="job-info">
           <div class="job-info-item">
-            <span class="job-info-label">時間區塊</span>
+            <span class="job-info-label">時間時段</span>
             <span class="job-info-value">${job.timeSlot || "-"}</span>
           </div>
           <div class="job-info-item">
@@ -262,6 +267,10 @@ window.app = {
           </div>
         </div>
         <div class="job-info">
+          <div class="job-info-item">
+            <span class="job-info-label">工作地址</span>
+            <span class="job-info-value">${job.address || "-"}</span>
+          </div>
           <div class="job-info-item">
             <span class="job-info-label">時價</span>
             <span class="job-info-value">$${job.hourly_rate || 0}</span>
@@ -287,6 +296,16 @@ window.app = {
     `;
     this.detailJobsList.appendChild(summary);
 
+    // 綁定編輯按鈕事件
+    document.querySelectorAll(".btn-edit-job").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const date = btn.dataset.date;
+        const index = Number(btn.dataset.index);
+        this.editJob(date, index);
+      });
+    });
+
     // 綁定刪除按鈕事件
     document.querySelectorAll(".btn-delete-job").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -301,7 +320,9 @@ window.app = {
   // ===== 開啟新增模態框 =====
   openAddJobModal() {
     // 重置表單
+    this.editJobId = null;
     this.clientName.value = "";
+    this.addressInput.value = "";
     this.startPeriod.value = "am";
     this.startHour.value = "";
     this.startMin.value = "00";
@@ -318,11 +339,79 @@ window.app = {
       btn.classList.remove("active");
     });
 
+    // 更新標題
+    const modalHeader = this.modal.querySelector(".modal-header");
+    modalHeader.textContent = "新增工作案件";
+
     this.modal.classList.add("active");
     this.clientName.focus();
   },
 
-   // ===== 刪除案件 =====
+  // ===== 開啟編輯模態框 =====
+  editJob(dateKey, jobIndex) {
+    const job = this.jobsByDate[dateKey][jobIndex];
+
+    // 填入現有資料
+    this.editJobId = job.id;
+    this.clientName.value = job.client;
+    this.addressInput.value = job.address || "";
+
+    // 解析時間
+    if (job.timeSlot && job.timeSlot !== "-") {
+      const times = job.timeSlot.split("～");
+      if (times.length === 2) {
+        const startTime = times[0].trim();
+        const endTime = times[1].trim();
+        const [startH, startM] = startTime.split(":");
+        const [endH, endM] = endTime.split(":");
+
+        this.startHour.value = parseInt(startH);
+        this.startMin.value = startM;
+        this.endHour.value = parseInt(endH);
+        this.endMin.value = endM;
+      }
+    }
+
+    this.hoursInput.value = job.hours;
+    this.hourlyRateInput.value = job.hourly_rate;
+
+    // 更新總金額
+    this.updateTotalPrice();
+    this.calculateHours();
+
+    // 標記活躍的價格按鈕
+    document.querySelectorAll(".preset-btn").forEach((btn) => {
+      if (btn.dataset.price == job.hourly_rate) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    // 更新標題
+    const modalHeader = this.modal.querySelector(".modal-header");
+    modalHeader.textContent = "編輯工作案件";
+
+    this.modal.classList.add("active");
+  },
+
+  // ===== 開啟 Google Maps =====
+  openMap() {
+    const address = this.addressInput.value;
+    if (!address) {
+      alert("請先輸入地址");
+      return;
+    }
+
+    // 使用 Google Maps 搜尋地址
+    const encodedAddress = encodeURIComponent(address);
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+      "_blank"
+    );
+  },
+
+  // ===== 刪除案件 =====
   async deleteJob(dateKey, jobIndex) {
     if (!confirm("確定要刪除此案件嗎？")) {
       return;
@@ -356,22 +445,28 @@ window.app = {
     }
   },
 
-
   // ===== 關閉模態框 =====
   closeModal() {
     this.modal.classList.remove("active");
   },
 
-  // ===== 儲存案件 =====
+  // ===== 保存案件 =====
   async saveJob(event) {
     event.preventDefault();
 
-    const startTimeStr = `${String(this.startHour.value).padStart(2, "0")}:${this.startMin.value}`;
-    const endTimeStr = `${String(this.endHour.value).padStart(2, "0")}:${this.endMin.value}`;
+    const startTimeStr = `${String(this.startHour.value).padStart(2, "0")}:${
+      this.startMin.value
+    }`;
+    const endTimeStr = `${String(this.endHour.value).padStart(2, "0")}:${
+      this.endMin.value
+    }`;
+
+    const isEdit = !!this.editJobId;
 
     const payload = {
       date: this.selectedDate,
       client_name: this.clientName.value,
+      address: this.addressInput.value,
       hours: Number(this.hoursInput.value),
       hourly_rate: Number(this.hourlyRateInput.value),
       time_slot: `${startTimeStr}～${endTimeStr}`,
@@ -383,28 +478,59 @@ window.app = {
     }
 
     try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      if (isEdit) {
+        // 更新案件
+        res = await fetch(`/api/jobs/${this.editJobId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // 新增案件
+        res = await fetch("/api/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
 
-      if (!res.ok) throw new Error("儲存失敗");
+      if (!res.ok) throw new Error("保存失敗");
 
       const savedJob = await res.json();
 
-      if (!this.jobsByDate[this.selectedDate]) {
-        this.jobsByDate[this.selectedDate] = [];
-      }
+      if (isEdit) {
+        // 更新前端資料
+        const jobIndex = this.jobsByDate[this.selectedDate].findIndex(
+          (j) => j.id == this.editJobId
+        );
+        if (jobIndex !== -1) {
+          this.jobsByDate[this.selectedDate][jobIndex] = {
+            id: savedJob.id,
+            client: savedJob.client_name,
+            address: savedJob.address,
+            total: savedJob.total,
+            hours: savedJob.hours,
+            hourly_rate: savedJob.hourly_rate,
+            timeSlot: payload.time_slot,
+          };
+        }
+      } else {
+        // 新增前端資料
+        if (!this.jobsByDate[this.selectedDate]) {
+          this.jobsByDate[this.selectedDate] = [];
+        }
 
-      this.jobsByDate[this.selectedDate].push({
-        id: savedJob.id,
-        client: savedJob.client_name,
-        total: savedJob.total,
-        hours: savedJob.hours,
-        hourly_rate: savedJob.hourly_rate,
-        timeSlot: payload.time_slot,
-      });
+        this.jobsByDate[this.selectedDate].push({
+          id: savedJob.id,
+          client: savedJob.client_name,
+          address: savedJob.address,
+          total: savedJob.total,
+          hours: savedJob.hours,
+          hourly_rate: savedJob.hourly_rate,
+          timeSlot: payload.time_slot,
+        });
+      }
 
       this.renderCalendar(this.currentDate);
       this.renderDetailJobs(this.selectedDate);
@@ -431,13 +557,14 @@ window.app = {
         (key) => delete this.jobsByDate[key]
       );
 
-      jobs.forEach((job,jobIndex) => {
+      jobs.forEach((job) => {
         if (!this.jobsByDate[job.date]) {
           this.jobsByDate[job.date] = [];
         }
         this.jobsByDate[job.date].push({
           id: job.id,
           client: job.client_name,
+          address: job.address || "",
           total: job.total,
           hours: job.hours,
           hourly_rate: job.hourly_rate,
@@ -460,6 +587,7 @@ window.app = {
       if (yearInput) yearInput.value = this.currentDate.getFullYear();
       if (monthInput) monthInput.value = this.currentDate.getMonth();
     };
+
     // 月份切換事件
     document.getElementById("prevMonth").addEventListener("click", () => {
       this.currentDate.setMonth(this.currentDate.getMonth() - 1);
@@ -505,7 +633,7 @@ window.app = {
       this.updateTotalPrice()
     );
 
-    // 時間輸入事件 - 確保這些元素存在
+    // 時間輸入事件
     if (this.startPeriod) {
       this.startPeriod.addEventListener("change", () => this.calculateHours());
     }

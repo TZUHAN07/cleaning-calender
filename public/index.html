@@ -59,7 +59,7 @@
         <div class="detail-header">
           <h1 id="detailDate">2025-12-12</h1>
           <button class="btn-detail-back" onclick="window.app.goToCalendar()">
-            ← 返回
+            ← 返回日曆
           </button>
         </div>
 
@@ -71,10 +71,11 @@
         </button>
 
         <div id="detailJobsList"></div>
+        <!-- 案件卡片會動態生成於此 -->
       </div>
     </div>
 
-    <!-- ===== 新增案件模態框 ===== -->
+    <!-- ===== 彈出新增案件模態框 ===== -->
     <div id="jobModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">新增工作案件</div>
@@ -92,7 +93,7 @@
 
           <!-- 彈性時間輸入 -->
           <div class="form-group">
-            <label>工作時間</label>
+            <label>服務時段<</label>
             <div class="time-input-group">
               <div class="time-input">
                 <label>開始時間</label>
@@ -101,7 +102,7 @@
                     <option value="am">上午</option>
                     <option value="pm">下午</option>
                   </select>
-                  <input id="startHour" type="number" min="1" max="12" placeholder="時" />
+                  <input id="startHour" type="number" min="1" max="12" placeholder="時" value="7"/>
                   <span class="time-colon">:</span>
                   <select id="startMin">
                     <option value="00">00</option>
@@ -117,7 +118,7 @@
                     <option value="am">上午</option>
                     <option value="pm">下午</option>
                   </select>
-                  <input id="endHour" type="number" min="1" max="12" placeholder="時" />
+                  <input id="endHour" type="number" min="1" max="12" placeholder="時" value="1"/>
                   <span class="time-colon">:</span>
                   <select id="endMin">
                     <option value="00">00</option>
@@ -127,7 +128,26 @@
               </div>
             </div>
             <div class="time-hint">
-              預計工作時數：<span id="estimatedHours">0</span> 小時
+              預計工作時數：<span id="estimatedHours">6</span> 小時
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>工作地址</label>
+            <div style="display: flex; gap: 8px;">
+              <input
+                id="addressInput"
+                type="text"
+                placeholder="輸入工作地址"
+              />
+              <button
+                type="button"
+                class="btn-map"
+                title="在 Google Maps 查看"
+                onclick="window.app.openMap()"
+              >
+                <img src="/images/google-maps.png" alt="Google-Map"/>
+              </button>
             </div>
           </div>
 

@@ -11,6 +11,10 @@ app.use(express.json());
 
 // ===== 提供前端 =====
 app.use(express.static(path.join(__dirname, "..", "public")));
+app.use(
+  "/images",
+  express.static(path.join(__dirname, "..", "public", "images"))
+);
 
 const auth = new google.auth.GoogleAuth({
   keyFile: path.join(__dirname, "credentials.json"),
@@ -23,7 +27,7 @@ const sheets = google.sheets({ version: "v4", auth });
 // ===== 新增案件 =====
 app.post("/api/jobs", async (req, res) => {
   try {
-    const { date, client_name, hours, hourly_rate, time_slot } = req.body;
+    const { date, client_name, hours, hourly_rate, time_slot, address } = req.body;
 
     // 驗證必填欄位
     if (!date || !client_name || !hours || !hourly_rate) {
@@ -38,7 +42,7 @@ app.post("/api/jobs", async (req, res) => {
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A:G",
+      range: "jobs!A:H",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -50,6 +54,7 @@ app.post("/api/jobs", async (req, res) => {
             hourly_rate,
             total_price,
             time_slot || "",
+            address || "",
           ],
         ],
       },
@@ -64,6 +69,7 @@ app.post("/api/jobs", async (req, res) => {
       hourly_rate,
       total: total_price,
       time_slot: time_slot || "",
+      address: address || "",
     });
   } catch (err) {
     console.error(err);
@@ -82,7 +88,7 @@ app.get("/api/jobs", async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A2:G",
+      range: "jobs!A2:H",
     });
 
     const rows = response.data.values || [];
@@ -96,6 +102,7 @@ app.get("/api/jobs", async (req, res) => {
         hourly_rate: Number(row[4]),
         total: Number(row[5]),
         time_slot: row[6] || "",
+        address: row[7] || "",
       }))
       .filter((job) => job.date && job.date.startsWith(month));
 
@@ -107,20 +114,16 @@ app.get("/api/jobs", async (req, res) => {
   }
 });
 
-// ===== 更新案件日期（拖移功能） =====
+// ===== 更新案件（包含日期、地址等） =====
 app.put("/api/jobs/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
-    const { date } = req.body;
-
-    if (!date) {
-      return res.status(400).json({ error: "缺少 date 參數" });
-    }
+    const { date, client_name, hours, hourly_rate, time_slot, address } = req.body;
 
     // 取得所有資料
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A2:G",
+      range: "jobs!A2:H",
     });
 
     const rows = response.data.values || [];
@@ -137,14 +140,20 @@ app.put("/api/jobs/:jobId", async (req, res) => {
       return res.status(404).json({ error: "找不到案件" });
     }
 
-    // 更新該列的日期
+    // 更新該列資料
     const updateRow = rows[targetRowIndex];
-    updateRow[1] = date;
+    updateRow[1] = date || updateRow[1];
+    updateRow[2] = client_name || updateRow[2];
+    updateRow[3] = hours || updateRow[3];
+    updateRow[4] = hourly_rate || updateRow[4];
+    updateRow[5] = (Number(updateRow[3]) * Number(updateRow[4])) || updateRow[5];
+    updateRow[6] = time_slot !== undefined ? time_slot : updateRow[6];
+    updateRow[7] = address !== undefined ? address : updateRow[7];
 
     // 寫回 Google Sheets
     await sheets.spreadsheets.values.update({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: `jobs!A${targetRowIndex + 2}:G${targetRowIndex + 2}`, // +2 因為跳過標題
+      range: `jobs!A${targetRowIndex + 2}:H${targetRowIndex + 2}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [updateRow],
@@ -153,9 +162,16 @@ app.put("/api/jobs/:jobId", async (req, res) => {
 
     res.json({
       success: true,
-      message: "案件日期已更新",
+      message: "案件已更新",
       jobId,
-      newDate: date,
+      id: jobId,
+      date: updateRow[1],
+      client_name: updateRow[2],
+      hours: updateRow[3],
+      hourly_rate: updateRow[4],
+      total: updateRow[5],
+      time_slot: updateRow[6],
+      address: updateRow[7],
     });
   } catch (err) {
     console.error(err);
@@ -170,7 +186,7 @@ app.delete("/api/jobs/:jobId", async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: "jobs!A2:F",
+      range: "jobs!A2:H",
     });
 
     const rows = response.data.values || [];
@@ -181,12 +197,11 @@ app.delete("/api/jobs/:jobId", async (req, res) => {
       return res.status(404).json({ error: "找不到該訂單" });
     }
 
-    // Google Sheets 的 row index 要 +2（因為 A2 起算）
     const sheetRowNumber = rowIndex + 2;
 
     await sheets.spreadsheets.values.clear({
       spreadsheetId: process.env.SPREADSHEET_ID,
-      range: `jobs!A${sheetRowNumber}:F${sheetRowNumber}`,
+      range: `jobs!A${sheetRowNumber}:H${sheetRowNumber}`,
     });
 
     res.json({ success: true });
